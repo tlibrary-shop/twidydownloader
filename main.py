@@ -1,6 +1,6 @@
 import os
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,42 +17,40 @@ app.add_middleware(
 
 @app.get("/api/extract")
 async def extract_info(url: str):
-    apify_token = os.environ.get("APIFY_TOKEN")
-    if not apify_token:
-        raise HTTPException(status_code=500, detail="APIFY_TOKEN belum diatur di Render!")
+    rapidapi_key = os.environ.get("APIFY_TOKEN") # Tetap pakai nama variable ini di Render
+    
+    if not rapidapi_key:
+        raise HTTPException(status_code=500, detail="API Token belum diatur di Render!")
 
-    # Router: Jika link adalah Instagram, gunakan Actor Instagram
-    if "instagram.com" in url:
-        actor_id = "apify/instagram-scraper" 
-    else:
-        # Placeholder jika suatu saat kamu tambah Actor lain
-        raise HTTPException(status_code=400, detail="Saat ini hanya mendukung Instagram melalui API ini.")
-        
-    api_url = f"https://api.apify.com/v2/acts/{actor_id}/runs?token={apify_token}"
-    
-    payload = {"directUrls": [url]}
-    
+    # API ini menggunakan endpoint GET dengan query parameter 'url'
+    api_url = "https://social-media-video-downloader.p.rapidapi.com/smvd/get/all"
+    querystring = {"url": url}
+    headers = {
+        "x-rapidapi-key": rapidapi_key,
+        "x-rapidapi-host": "social-media-video-downloader.p.rapidapi.com"
+    }
+
     try:
-        run_response = requests.post(api_url, json=payload, timeout=15)
-        run_data = run_response.json()
-        run_id = run_data['data']['id']
+        response = requests.get(api_url, headers=headers, params=querystring, timeout=20)
+        data = response.json()
         
-        # Mengambil hasil
-        result_url = f"https://api.apify.com/v2/acts/{actor_id}/runs/{run_id}/dataset/items?token={apify_token}"
-        result_response = requests.get(result_url, timeout=20)
-        items = result_response.json()
-        
-        if not items:
-            raise Exception("Gagal mendapatkan data dari Instagram.")
+        if "error" in data or not data.get("links"):
+            raise Exception("API tidak menemukan video. Link mungkin private atau tidak valid.")
 
-        data = items[0]
-        # Sesuaikan key 'videoUrl' atau 'displayUrl' sesuai struktur data Instagram
-        video_url = data.get("videoUrl") or data.get("displayUrl")
-        
+        formats = []
+        for item in data.get("links", []):
+            label = item.get("type", "Video").capitalize()
+            kualitas = item.get("quality", "HD")
+            formats.append({
+                "label": f"{label} ({kualitas})",
+                "ext": "mp4" if "video" in label.lower() else "mp3",
+                "url": item.get("link")
+            })
+
         return {
-            "title": data.get("captionText", "Download Instagram"),
-            "thumbnail": data.get("displayUrl", ""),
-            "formats": [{"label": "Video/Foto", "ext": "mp4", "url": video_url}]
+            "title": data.get("title", "Video Siap Diunduh"),
+            "thumbnail": data.get("picture", ""),
+            "formats": formats
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
