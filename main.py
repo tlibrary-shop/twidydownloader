@@ -24,16 +24,14 @@ async def add_iframe_headers(request: Request, call_next):
 
 @app.get("/api/extract")
 async def extract_info(url: str):
-    # Konfigurasi yt-dlp dengan trik anti-blokir
     ydl_opts = {
         'quiet': True, 
         'skip_download': True,
         'no_warnings': True,
-        # Trik bypass bot YouTube & pembatasan IP
         'nocheckcertificate': True,
         'geo_bypass': True,
         'extractor_args': {
-            'youtube': {'player_client': ['android', 'web']} # Menyamar sebagai HP Android
+            'youtube': {'player_client': ['android', 'web']}
         },
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -47,7 +45,6 @@ async def extract_info(url: str):
             formats = info.get("formats", [])
             result_links = []
             
-            # 1. Cari Format Video yang sudah ada Audionya (Pre-merged)
             video_audio = [f for f in formats if f.get("vcodec") != "none" and f.get("acodec") != "none"]
             if video_audio:
                 best_va = video_audio[-1]
@@ -57,14 +54,12 @@ async def extract_info(url: str):
                     "url": best_va.get("url")
                 })
             elif info.get("url"):
-                # Fallback untuk TikTok/Twitter/IG yang biasanya langsung memberikan 1 link utuh
                 result_links.append({
                     "label": "Video (Utuh)", 
                     "ext": info.get("ext", "mp4"), 
                     "url": info.get("url")
                 })
                 
-            # 2. Cari Format Audio Saja
             audio_only = [f for f in formats if f.get("acodec") != "none" and f.get("vcodec") == "none"]
             if audio_only:
                 best_a = audio_only[-1]
@@ -74,7 +69,6 @@ async def extract_info(url: str):
                     "url": best_a.get("url")
                 })
 
-            # Hapus duplikat link (berdasarkan label)
             unique_links = {v['label']: v for v in result_links}.values()
 
             return {
