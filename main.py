@@ -32,55 +32,51 @@ async def extract_info(url: str):
     if not rapidapi_key:
         raise HTTPException(status_code=500, detail="RAPIDAPI_KEY belum dipasang di pengaturan Environment Render!")
 
-    # Target API (Social Media Video Downloader)
-    api_url = "https://social-media-video-downloader.p.rapidapi.com/smvd/get/all"
-    querystring = {"url": url}
+    # Target API yang kamu pilih (Auto Download All In One)
+    api_url = "https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink"
     
+    # API ini menggunakan format payload JSON dan metode POST
+    payload = {"url": url}
     headers = {
         "x-rapidapi-key": rapidapi_key,
-        "x-rapidapi-host": "social-media-video-downloader.p.rapidapi.com"
+        "x-rapidapi-host": "auto-download-all-in-one.p.rapidapi.com",
+        "Content-Type": "application/json"
     }
 
     try:
-        # Mengirim URL sosial media ke RapidAPI
-        response = requests.get(api_url, headers=headers, params=querystring, timeout=15)
+        # Mengirim URL ke API
+        response = requests.post(api_url, json=payload, headers=headers, timeout=20)
         
-        # Jika API menolak akses (misal: kunci salah atau kuota habis)
         if response.status_code != 200:
-            raise Exception("Gagal menghubungi server pengunduh. Pastikan kuota gratis RapidAPI masih tersedia.")
+            raise Exception("Gagal menghubungi API. Pastikan kamu sudah klik tombol biru 'Subscribe to Test' di RapidAPI dan kuota tersedia.")
 
         data = response.json()
         
-        # Deteksi pesan error langsung dari balasan API
-        if "error" in data or data.get("message") == "You are not subscribed to this API.":
-            raise Exception(data.get("message", "API gagal memproses link ini. Mungkin link diprivate atau salah."))
-
-        # Mengekstrak judul dan gambar thumbnail
+        # Mengekstrak judul dan cover
         title = data.get("title", "File Siap Diunduh!")
-        thumbnail = data.get("picture", "")
-        links = data.get("links", [])
+        thumbnail = data.get("cover", "") 
         
-        if not links:
-            raise Exception("Tidak ada link download video/audio yang ditemukan untuk URL ini.")
+        formats = []
+        medias = data.get("medias", [])
+        
+        if not medias:
+            raise Exception("API tidak menemukan link download untuk video ini. Link mungkin di-private.")
 
-        result_links = []
-        
-        # Membaca daftar format (Video MP4 / Audio MP3) dari API
-        for item in links:
-            tipe = item.get("type", "video") # Biasanya API membalas dengan 'video' atau 'audio'
-            kualitas = item.get("quality", "HD")
-            link_url = item.get("link", "")
-            
+        # Memisahkan hasil berdasarkan Video atau Audio
+        for item in medias:
+            link_url = item.get("url")
             if link_url:
-                if tipe == "audio":
-                    result_links.append({"label": "Audio Only", "ext": "mp3", "url": link_url})
-                else:
-                    result_links.append({"label": f"Video ({kualitas})", "ext": "mp4", "url": link_url})
+                kualitas = item.get("quality", "HD")
+                ext = item.get("extension", "mp4")
+                tipe = item.get("type", "video")
+                
+                label = "Audio Only" if tipe == "audio" else f"Video ({kualitas})"
+                formats.append({"label": label, "ext": ext, "url": link_url})
 
         return {
             "title": title,
             "thumbnail": thumbnail,
-            "formats": result_links
+            "formats": formats
         }
         
     except Exception as e:
