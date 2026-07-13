@@ -6,7 +6,6 @@ import yt_dlp
 
 app = FastAPI(title="TwidyDownloader API")
 
-# 1. Middleware: Izinkan akses iFrame dan CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,50 +17,76 @@ app.add_middleware(
 @app.middleware("http")
 async def add_iframe_headers(request: Request, call_next):
     response = await call_next(request)
-
-    # Hapus header pembatasan iFrame jika ada menggunakan fungsi 'del'
     if "X-Frame-Options" in response.headers:
         del response.headers["X-Frame-Options"]
-
-    # Izinkan embed di semua domain
     response.headers["Content-Security-Policy"] = "frame-ancestors *"
     return response
 
-# 2. Endpoint API yt-dlp
 @app.get("/api/extract")
 async def extract_info(url: str):
+    # Konfigurasi yt-dlp dengan trik anti-blokir
     ydl_opts = {
         'quiet': True, 
         'skip_download': True,
-        'no_warnings': True
+        'no_warnings': True,
+        # Trik bypass bot YouTube & pembatasan IP
+        'nocheckcertificate': True,
+        'geo_bypass': True,
+        'extractor_args': {
+            'youtube': {'player_client': ['android', 'web']} # Menyamar sebagai HP Android
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
     }
+    
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             
-            # Saring format agar response API tidak terlalu berat
-            filtered_formats = []
-            for f in info.get("formats", []):
-                if f.get("url") and f.get("vcodec") != "none" or f.get("acodec") != "none":
-                    filtered_formats.append({
-                        "ext": f.get("ext", ""),
-                        "resolution": f.get("resolution", "Audio Only"),
-                        "url": f.get("url")
-                    })
-                    
+            formats = info.get("formats", [])
+            result_links = []
+            
+            # 1. Cari Format Video yang sudah ada Audionya (Pre-merged)
+            video_audio = [f for f in formats if f.get("vcodec") != "none" and f.get("acodec") != "none"]
+            if video_audio:
+                best_va = video_audio[-1]
+                result_links.append({
+                    "label": f"Video ({best_va.get('resolution', 'HD')})", 
+                    "ext": best_va.get("ext", "mp4"), 
+                    "url": best_va.get("url")
+                })
+            elif info.get("url"):
+                # Fallback untuk TikTok/Twitter/IG yang biasanya langsung memberikan 1 link utuh
+                result_links.append({
+                    "label": "Video (Utuh)", 
+                    "ext": info.get("ext", "mp4"), 
+                    "url": info.get("url")
+                })
+                
+            # 2. Cari Format Audio Saja
+            audio_only = [f for f in formats if f.get("acodec") != "none" and f.get("vcodec") == "none"]
+            if audio_only:
+                best_a = audio_only[-1]
+                result_links.append({
+                    "label": "Audio Only", 
+                    "ext": best_a.get("ext", "mp3"), 
+                    "url": best_a.get("url")
+                })
+
+            # Hapus duplikat link (berdasarkan label)
+            unique_links = {v['label']: v for v in result_links}.values()
+
             return {
-                "title": info.get("title", "Unknown Title"),
+                "title": info.get("title", "Judul Tidak Diketahui"),
                 "thumbnail": info.get("thumbnail", ""),
-                "formats": filtered_formats
+                "formats": list(unique_links)
             }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# 3. Mount folder static untuk CSS & JS
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# 4. Catch-all Route untuk SPA Frontend (SEO Friendly tanpa #)
-# Route ini diletakkan paling bawah agar tidak menabrak endpoint /api
 @app.get("/{full_path:path}", response_class=HTMLResponse)
 async def serve_spa(full_path: str):
     return FileResponse("static/index.html")
