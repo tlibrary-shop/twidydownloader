@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TwidyDownloader</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-mode">
+
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2 id="logo" class="logo" style="cursor: pointer;">TwidyDownloader</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/" class="nav-item" data-target="home"><i class="fas fa-home"></i> <span>Home</span></a></li>
+            <li><a href="/youtube" class="nav-item" data-target="youtube"><i class="fab fa-youtube"></i> <span>YouTube</span></a></li>
+            <li><a href="/tiktok" class="nav-item" data-target="tiktok"><i class="fab fa-tiktok"></i> <span>TikTok</span></a></li>
+            <li><a href="/instagram" class="nav-item" data-target="instagram"><i class="fab fa-instagram"></i> <span>Instagram</span></a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <div class="header-left">
+                <button id="toggle-sidebar" class="btn-icon"><i class="fas fa-bars"></i></button>
+                <button id="btn-back" class="btn-icon"><i class="fas fa-arrow-left"></i></button>
+            </div>
+            <div class="header-right">
+                <button id="toggle-theme" class="btn-icon"><i class="fas fa-moon"></i></button>
+            </div>
+        </header>
+
+        <div class="content-container">
+            <section id="home" class="page-section active">
+                <h1>Selamat Datang di TwidyDownloader</h1>
+                <p>Pilih platform dari sidebar untuk mulai mengunduh video atau musik favoritmu.</p>
+            </section>
+
+            <section id="youtube" class="page-section">
+                <h1>YouTube Downloader</h1>
+                <div class="input-group">
+                    <input type="text" id="yt-input" placeholder="Tempel URL YouTube di sini...">
+                    <button onclick="fetchDownload('yt-input', 'yt-result')">Proses</button>
+                </div>
+                <div id="yt-result" class="result-area"></div>
+            </section>
+
+            <section id="tiktok" class="page-section">
+                <h1>TikTok Downloader</h1>
+                <div class="input-group">
+                    <input type="text" id="tt-input" placeholder="Tempel URL TikTok di sini...">
+                    <button onclick="fetchDownload('tt-input', 'tt-result')">Proses</button>
+                </div>
+                <div id="tt-result" class="result-area"></div>
+            </section>
+            
+            <section id="instagram" class="page-section">
+                <h1>Instagram Downloader</h1>
+                <div class="input-group">
+                    <input type="text" id="ig-input" placeholder="Tempel URL Instagram di sini...">
+                    <button onclick="fetchDownload('ig-input', 'ig-result')">Proses</button>
+                </div>
+                <div id="ig-result" class="result-area"></div>
+            </section>
+        </div>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
