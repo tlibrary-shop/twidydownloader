@@ -1,76 +1,82 @@
-// Konfigurasi Routing
-const routes = {
-    '/': 'home',
-    '/youtube': 'youtube',
-    '/tiktok': 'tiktok',
-    '/instagram': 'instagram'
+const platforms = {
+    '/youtube': { title: 'YouTube Downloader', icon: 'fab fa-youtube', color: '#ff0000', placeholder: 'Tempel link YouTube di sini...' },
+    '/tiktok': { title: 'TikTok Downloader', icon: 'fab fa-tiktok', color: 'var(--text-color)', placeholder: 'Tempel link TikTok di sini...' },
+    '/instagram': { title: 'Instagram Downloader', icon: 'fab fa-instagram', color: '#e1306c', placeholder: 'Tempel link Instagram di sini...' },
+    '/facebook': { title: 'Facebook Downloader', icon: 'fab fa-facebook', color: '#1877f2', placeholder: 'Tempel link Facebook di sini...' },
+    '/twitter': { title: 'X (Twitter) Downloader', icon: 'fab fa-x-twitter', color: 'var(--text-color)', placeholder: 'Tempel link X/Twitter di sini...' },
+    '/threads': { title: 'Threads Downloader', icon: 'fas fa-at', color: 'var(--text-color)', placeholder: 'Tempel link Threads di sini...' },
 };
 
-// Fungsi Navigasi SPA
 function navigateTo(url) {
     window.history.pushState(null, null, url);
     renderPage();
 }
 
-// Fungsi Render Halaman
 function renderPage() {
     const path = window.location.pathname;
-    const targetSection = routes[path] || 'home';
-
-    // Sembunyikan semua section
-    document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
     
-    // Tampilkan section yang sesuai
-    const activeSection = document.getElementById(targetSection);
-    if(activeSection) activeSection.classList.add('active');
+    // Reset Views
+    document.getElementById('page-home').classList.remove('active');
+    document.getElementById('page-downloader').classList.remove('active');
+    document.getElementById('dl-result').innerHTML = ''; 
+    document.getElementById('dl-input').value = '';
 
-    // Update highlight di sidebar
+    // Update Sidebar Active State
     document.querySelectorAll('.nav-item').forEach(nav => {
         nav.classList.remove('active');
         if(nav.getAttribute('href') === path) nav.classList.add('active');
     });
+
+    if (path === '/' || !platforms[path]) {
+        document.getElementById('page-home').classList.add('active');
+    } else {
+        document.getElementById('page-downloader').classList.add('active');
+        const p = platforms[path];
+        
+        // Update UI dynamically based on platform
+        document.getElementById('dl-title').innerText = p.title;
+        document.getElementById('dl-icon').className = p.icon;
+        document.getElementById('dl-icon').style.color = p.color;
+        document.getElementById('dl-input').placeholder = p.placeholder;
+    }
 }
 
-// Intercept klik pada link agar tidak me-reload halaman
-document.querySelectorAll('.nav-item').forEach(link => {
+// Event Listeners Routing
+document.querySelectorAll('a[href^="/"]').forEach(link => {
     link.addEventListener('click', e => {
         e.preventDefault();
         navigateTo(e.currentTarget.getAttribute('href'));
+        // Auto close sidebar on mobile
+        if(window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('minimized');
+        }
     });
 });
 
-// Event Listener Tombol Back & Home
-window.addEventListener('popstate', renderPage); // Menangani tombol back browser
+window.addEventListener('popstate', renderPage);
 
-document.getElementById('btn-back').addEventListener('click', () => {
-    window.history.back();
-});
+document.getElementById('btn-back').addEventListener('click', () => { window.history.back(); });
+document.getElementById('logo').addEventListener('click', () => { navigateTo('/'); });
 
-document.getElementById('logo').addEventListener('click', () => {
-    navigateTo('/');
-});
-
-// Sidebar Toggle
 document.getElementById('toggle-sidebar').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('minimized');
 });
 
-// Theme Toggle
 document.getElementById('toggle-theme').addEventListener('click', () => {
     const body = document.body;
     body.classList.toggle('dark-mode');
-    const isDark = body.classList.contains('dark-mode');
-    document.getElementById('toggle-theme').innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    document.getElementById('toggle-theme').innerHTML = body.classList.contains('dark-mode') ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 });
 
-// Fungsi Fetch API yt-dlp
-async function fetchDownload(inputId, resultId) {
-    const url = document.getElementById(inputId).value;
-    const resultDiv = document.getElementById(resultId);
+async function processDownload() {
+    const url = document.getElementById('dl-input').value;
+    const resultDiv = document.getElementById('dl-result');
+    const btn = document.getElementById('btn-process');
     
-    if (!url) return alert("Masukkan URL terlebih dahulu!");
+    if (!url) return alert("URL tidak boleh kosong!");
     
-    resultDiv.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Memproses link... Mohon tunggu.</p>';
+    resultDiv.innerHTML = '<div style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top:10px;">Sedang memproses link... (Bisa memakan waktu 10-30 detik)</p></div>';
+    btn.disabled = true;
 
     try {
         const response = await fetch(`/api/extract?url=${encodeURIComponent(url)}`);
@@ -78,26 +84,35 @@ async function fetchDownload(inputId, resultId) {
 
         if (!response.ok) throw new Error(data.detail || "Gagal memproses video");
 
+        if (!data.formats || data.formats.length === 0) {
+            throw new Error("Tidak ada format video/audio yang ditemukan dari link ini.");
+        }
+
         let formatsHtml = data.formats.map(f => `
             <a href="${f.url}" target="_blank" class="format-item">
-                <span><i class="fas fa-download"></i> ${f.ext.toUpperCase()}</span>
-                <span>${f.resolution}</span>
+                <span><i class="fas fa-file-download"></i> ${f.label}</span>
+                <span style="text-transform: uppercase; font-size: 12px; background: var(--bg-color); padding: 3px 8px; border-radius: 4px;">${f.ext}</span>
             </a>
         `).join('');
 
         resultDiv.innerHTML = `
             <div class="result-card">
-                <img src="${data.thumbnail}" alt="Thumbnail">
+                ${data.thumbnail ? `<img src="${data.thumbnail}" alt="Thumbnail">` : ''}
                 <h3>${data.title}</h3>
-                <br>
-                <h4>Link Tersedia (Klik untuk Unduh/Lihat):</h4>
                 <div class="format-list">${formatsHtml}</div>
             </div>
         `;
     } catch (error) {
-        resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        resultDiv.innerHTML = `
+            <div class="result-card" style="border-color: #dc3545;">
+                <i class="fas fa-exclamation-triangle" style="color: #dc3545; font-size: 30px; margin-bottom: 15px;"></i>
+                <h3 style="color: #dc3545;">Terjadi Kesalahan</h3>
+                <p>${error.message}</p>
+                <p style="font-size: 12px; margin-top:10px; color: gray;">*Catatan: YouTube dan Instagram sering memblokir server secara acak. Coba lagi nanti atau gunakan video lain.</p>
+            </div>`;
+    } finally {
+        btn.disabled = false;
     }
 }
 
-// Inisialisasi saat load pertama kali
 window.addEventListener('DOMContentLoaded', renderPage);
