@@ -33,7 +33,7 @@ async def extract_info(url: str):
         raise HTTPException(status_code=500, detail="RAPIDAPI_KEY belum dipasang di pengaturan Environment Render!")
 
     # Target API yang kamu pilih (Auto Download All In One)
-    api_url = "https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink"
+    api_url = "https://youtube-media-downloader.p.rapidapi.com/v2/channel/posts?channelId=UCY2ekMrWhsUVHwO3J3-PCzQ"
     
     # API ini menggunakan format payload JSON dan metode POST
     payload = {"url": url}
