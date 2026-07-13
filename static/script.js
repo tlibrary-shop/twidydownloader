@@ -33,7 +33,6 @@ function renderPage() {
         document.getElementById('page-downloader').classList.add('active');
         const p = platforms[path];
         
-        // Update UI dynamically based on platform
         document.getElementById('dl-title').innerText = p.title;
         document.getElementById('dl-icon').className = p.icon;
         document.getElementById('dl-icon').style.color = p.color;
@@ -41,31 +40,59 @@ function renderPage() {
     }
 }
 
-// Event Listeners Routing
+// Event Listeners Navigasi
 document.querySelectorAll('a[href^="/"]').forEach(link => {
     link.addEventListener('click', e => {
         e.preventDefault();
         navigateTo(e.currentTarget.getAttribute('href'));
-        // Auto close sidebar on mobile
+        
+        // Tutup sidebar otomatis di HP setelah klik menu
         if(window.innerWidth <= 768) {
-            document.getElementById('sidebar').classList.remove('minimized');
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebar-overlay').classList.remove('active');
         }
     });
 });
 
 window.addEventListener('popstate', renderPage);
 
-document.getElementById('btn-back').addEventListener('click', () => { window.history.back(); });
-document.getElementById('logo').addEventListener('click', () => { navigateTo('/'); });
-
-document.getElementById('toggle-sidebar').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('minimized');
+// Tombol Back di dalam halaman Downloader
+document.getElementById('btn-back').addEventListener('click', () => { 
+    navigateTo('/'); 
 });
 
+// Klik Logo kembali ke Home
+document.getElementById('logo').addEventListener('click', () => { 
+    navigateTo('/'); 
+});
+
+// Sidebar Toggle & Overlay Logic (Mobile Friendly)
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebar-overlay');
+
+document.getElementById('toggle-sidebar').addEventListener('click', () => {
+    if(window.innerWidth <= 768) {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    } else {
+        // Mode desktop: meminimize sidebar (menggeser ke kiri)
+        sidebar.style.transform = sidebar.style.transform === 'translateX(-100%)' ? 'translateX(0)' : 'translateX(-100%)';
+    }
+});
+
+// Tutup sidebar saat overlay di-klik
+overlay.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+});
+
+// Dark/Light Mode Toggle
 document.getElementById('toggle-theme').addEventListener('click', () => {
     const body = document.body;
     body.classList.toggle('dark-mode');
-    document.getElementById('toggle-theme').innerHTML = body.classList.contains('dark-mode') ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    body.classList.toggle('light-mode');
+    const isDark = body.classList.contains('dark-mode');
+    document.getElementById('toggle-theme').innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 });
 
 async function processDownload() {
@@ -73,7 +100,7 @@ async function processDownload() {
     const resultDiv = document.getElementById('dl-result');
     const btn = document.getElementById('btn-process');
     
-    if (!url) return alert("URL tidak boleh kosong!");
+    if (!url) return alert("Masukkan URL terlebih dahulu!");
     
     resultDiv.innerHTML = '<div style="text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top:10px;">Sedang memproses link... (Bisa memakan waktu 10-30 detik)</p></div>';
     btn.disabled = true;
@@ -91,7 +118,7 @@ async function processDownload() {
         let formatsHtml = data.formats.map(f => `
             <a href="${f.url}" target="_blank" class="format-item">
                 <span><i class="fas fa-file-download"></i> ${f.label}</span>
-                <span style="text-transform: uppercase; font-size: 12px; background: var(--bg-color); padding: 3px 8px; border-radius: 4px;">${f.ext}</span>
+                <span style="text-transform: uppercase; font-size: 12px; background: var(--bg-color); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);">${f.ext}</span>
             </a>
         `).join('');
 
@@ -108,11 +135,12 @@ async function processDownload() {
                 <i class="fas fa-exclamation-triangle" style="color: #dc3545; font-size: 30px; margin-bottom: 15px;"></i>
                 <h3 style="color: #dc3545;">Terjadi Kesalahan</h3>
                 <p>${error.message}</p>
-                <p style="font-size: 12px; margin-top:10px; color: gray;">*Catatan: YouTube dan Instagram sering memblokir server secara acak. Coba lagi nanti atau gunakan video lain.</p>
             </div>`;
     } finally {
         btn.disabled = false;
     }
 }
 
+// Set initial body class & render page
+document.body.classList.add('light-mode');
 window.addEventListener('DOMContentLoaded', renderPage);
