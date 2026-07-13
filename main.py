@@ -18,8 +18,11 @@ app.add_middleware(
 @app.middleware("http")
 async def add_iframe_headers(request: Request, call_next):
     response = await call_next(request)
-    # Hapus header pembatasan iFrame bawaan server jika ada
-    response.headers.pop("X-Frame-Options", None)
+
+    # Hapus header pembatasan iFrame jika ada menggunakan fungsi 'del'
+    if "X-Frame-Options" in response.headers:
+        del response.headers["X-Frame-Options"]
+
     # Izinkan embed di semua domain
     response.headers["Content-Security-Policy"] = "frame-ancestors *"
     return response
