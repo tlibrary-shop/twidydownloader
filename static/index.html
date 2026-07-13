@@ -7,66 +7,67 @@
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="dark-mode">
+<body class="light-mode">
 
-    <nav id="sidebar" class="sidebar">
-        <div class="sidebar-header">
-            <h2 id="logo" class="logo" style="cursor: pointer;">Twidy</h2>
+    <header class="top-header">
+        <div class="header-left">
+            <button id="toggle-sidebar" class="btn-icon"><i class="fas fa-bars"></i></button>
+            <h2 id="logo" class="logo" style="cursor: pointer;">TwidyDownloader</h2>
         </div>
-        <ul class="nav-links">
-            <li><a href="/" class="nav-item" data-id="home"><i class="fas fa-home"></i> <span>Home</span></a></li>
-            <li><a href="/youtube" class="nav-item" data-id="youtube"><i class="fab fa-youtube" style="color: #ff0000;"></i> <span>YouTube</span></a></li>
-            <li><a href="/tiktok" class="nav-item" data-id="tiktok"><i class="fab fa-tiktok"></i> <span>TikTok</span></a></li>
-            <li><a href="/instagram" class="nav-item" data-id="instagram"><i class="fab fa-instagram" style="color: #e1306c;"></i> <span>Instagram</span></a></li>
-            <li><a href="/facebook" class="nav-item" data-id="facebook"><i class="fab fa-facebook" style="color: #1877f2;"></i> <span>Facebook</span></a></li>
-            <li><a href="/twitter" class="nav-item" data-id="twitter"><i class="fab fa-x-twitter"></i> <span>X (Twitter)</span></a></li>
-            <li><a href="/threads" class="nav-item" data-id="threads"><i class="fas fa-at"></i> <span>Threads</span></a></li>
-        </ul>
-    </nav>
-
-    <main class="main-content">
-        <header>
-            <div class="header-left">
-                <button id="toggle-sidebar" class="btn-icon"><i class="fas fa-bars"></i></button>
-                <button id="btn-back" class="btn-icon"><i class="fas fa-arrow-left"></i></button>
-            </div>
-            <div class="header-right">
-                <button id="toggle-theme" class="btn-icon"><i class="fas fa-moon"></i></button>
-            </div>
-        </header>
-
-        <div class="content-container">
-            
-            <section id="page-home" class="page-section active">
-                <div class="welcome-box">
-                    <h1>Selamat Datang di TwidyDownloader</h1>
-                    <p>Pilih platform di bawah ini untuk mulai mengunduh video, musik, atau gambar secara gratis.</p>
-                </div>
-                
-                <div class="home-grid">
-                    <a href="/youtube" class="grid-card"><i class="fab fa-youtube" style="color: #ff0000;"></i> YouTube</a>
-                    <a href="/tiktok" class="grid-card"><i class="fab fa-tiktok"></i> TikTok</a>
-                    <a href="/instagram" class="grid-card"><i class="fab fa-instagram" style="color: #e1306c;"></i> Instagram</a>
-                    <a href="/facebook" class="grid-card"><i class="fab fa-facebook" style="color: #1877f2;"></i> Facebook</a>
-                    <a href="/twitter" class="grid-card"><i class="fab fa-x-twitter"></i> X (Twitter)</a>
-                    <a href="/threads" class="grid-card"><i class="fas fa-at"></i> Threads</a>
-                </div>
-            </section>
-
-            <section id="page-downloader" class="page-section">
-                <div class="downloader-header">
-                    <i id="dl-icon" class="fas fa-download"></i>
-                    <h1 id="dl-title">Downloader</h1>
-                </div>
-                <div class="input-group">
-                    <input type="text" id="dl-input" placeholder="Tempel URL di sini...">
-                    <button id="btn-process" onclick="processDownload()">Proses</button>
-                </div>
-                <div id="dl-result" class="result-area"></div>
-            </section>
-
+        <div class="header-right">
+            <button id="toggle-theme" class="btn-icon"><i class="fas fa-moon"></i></button>
         </div>
-    </main>
+    </header>
+
+    <div class="app-body">
+        <nav id="sidebar" class="sidebar">
+            <ul class="nav-links">
+                <li><a href="/" class="nav-item" data-id="home"><i class="fas fa-home"></i> <span>Home</span></a></li>
+                <li><a href="/youtube" class="nav-item" data-id="youtube"><i class="fab fa-youtube" style="color: #ff0000;"></i> <span>YouTube</span></a></li>
+                <li><a href="/tiktok" class="nav-item" data-id="tiktok"><i class="fab fa-tiktok"></i> <span>TikTok</span></a></li>
+                <li><a href="/instagram" class="nav-item" data-id="instagram"><i class="fab fa-instagram" style="color: #e1306c;"></i> <span>Instagram</span></a></li>
+                <li><a href="/facebook" class="nav-item" data-id="facebook"><i class="fab fa-facebook" style="color: #1877f2;"></i> <span>Facebook</span></a></li>
+                <li><a href="/twitter" class="nav-item" data-id="twitter"><i class="fab fa-x-twitter"></i> <span>X (Twitter)</span></a></li>
+                <li><a href="/threads" class="nav-item" data-id="threads"><i class="fas fa-at"></i> <span>Threads</span></a></li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <div id="sidebar-overlay" class="overlay"></div>
+
+            <div class="content-container">
+                <section id="page-home" class="page-section active">
+                    <div class="welcome-box">
+                        <h1>Selamat Datang di TwidyDownloader</h1>
+                        <p>Pilih platform di bawah ini atau dari sidebar untuk mulai mengunduh video, musik, atau gambar secara gratis.</p>
+                    </div>
+                    
+                    <div class="home-grid">
+                        <a href="/youtube" class="grid-card"><i class="fab fa-youtube" style="color: #ff0000;"></i> YouTube</a>
+                        <a href="/tiktok" class="grid-card"><i class="fab fa-tiktok"></i> TikTok</a>
+                        <a href="/instagram" class="grid-card"><i class="fab fa-instagram" style="color: #e1306c;"></i> Instagram</a>
+                        <a href="/facebook" class="grid-card"><i class="fab fa-facebook" style="color: #1877f2;"></i> Facebook</a>
+                        <a href="/twitter" class="grid-card"><i class="fab fa-x-twitter"></i> X (Twitter)</a>
+                        <a href="/threads" class="grid-card"><i class="fas fa-at"></i> Threads</a>
+                    </div>
+                </section>
+
+                <section id="page-downloader" class="page-section">
+                    <div class="downloader-header">
+                        <button id="btn-back" class="btn-icon-small"><i class="fas fa-arrow-left"></i></button>
+                        <i id="dl-icon" class="fas fa-download"></i>
+                        <h1 id="dl-title">Downloader</h1>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="dl-input" placeholder="Tempel URL di sini...">
+                        <button id="btn-process" onclick="processDownload()">Proses</button>
+                    </div>
+                    <div id="dl-result" class="result-area"></div>
+                </section>
+            </div>
+        </main>
+    </div>
 
     <script src="/static/script.js"></script>
 </body>
