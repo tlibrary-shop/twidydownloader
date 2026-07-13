@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="TwidyDownloader API")
 
-# Izinkan akses iFrame
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,73 +15,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.middleware("http")
-async def add_iframe_headers(request: Request, call_next):
-    response = await call_next(request)
-    if "X-Frame-Options" in response.headers:
-        del response.headers["X-Frame-Options"]
-    response.headers["Content-Security-Policy"] = "frame-ancestors *"
-    return response
-
 @app.get("/api/extract")
 async def extract_info(url: str):
-    # Mengambil kunci rahasia dari Environment Variable Render
-    rapidapi_key = os.environ.get("RAPIDAPI_KEY")
-    
-    if not rapidapi_key:
-        raise HTTPException(status_code=500, detail="RAPIDAPI_KEY belum dipasang di pengaturan Environment Render!")
+    apify_token = os.environ.get("APIFY_TOKEN")
+    if not apify_token:
+        raise HTTPException(status_code=500, detail="APIFY_TOKEN belum diatur di Render!")
 
-    # Target API yang kamu pilih (Auto Download All In One)
-    api_url = "https://youtube-media-downloader.p.rapidapi.com/v2/channel/posts?channelId=UCY2ekMrWhsUVHwO3J3-PCzQ"
+    # Router: Jika link adalah Instagram, gunakan Actor Instagram
+    if "instagram.com" in url:
+        actor_id = "apify/instagram-scraper" 
+    else:
+        # Placeholder jika suatu saat kamu tambah Actor lain
+        raise HTTPException(status_code=400, detail="Saat ini hanya mendukung Instagram melalui API ini.")
+        
+    api_url = f"https://api.apify.com/v2/acts/{actor_id}/runs?token={apify_token}"
     
-    # API ini menggunakan format payload JSON dan metode POST
-    payload = {"url": url}
-    headers = {
-        "x-rapidapi-key": rapidapi_key,
-        "x-rapidapi-host": "auto-download-all-in-one.p.rapidapi.com",
-        "Content-Type": "application/json"
-    }
-
+    payload = {"directUrls": [url]}
+    
     try:
-        # Mengirim URL ke API
-        response = requests.post(api_url, json=payload, headers=headers, timeout=20)
+        run_response = requests.post(api_url, json=payload, timeout=15)
+        run_data = run_response.json()
+        run_id = run_data['data']['id']
         
-        if response.status_code != 200:
-            raise Exception("Gagal menghubungi API. Pastikan kamu sudah klik tombol biru 'Subscribe to Test' di RapidAPI dan kuota tersedia.")
+        # Mengambil hasil
+        result_url = f"https://api.apify.com/v2/acts/{actor_id}/runs/{run_id}/dataset/items?token={apify_token}"
+        result_response = requests.get(result_url, timeout=20)
+        items = result_response.json()
+        
+        if not items:
+            raise Exception("Gagal mendapatkan data dari Instagram.")
 
-        data = response.json()
+        data = items[0]
+        # Sesuaikan key 'videoUrl' atau 'displayUrl' sesuai struktur data Instagram
+        video_url = data.get("videoUrl") or data.get("displayUrl")
         
-        # Mengekstrak judul dan cover
-        title = data.get("title", "File Siap Diunduh!")
-        thumbnail = data.get("cover", "") 
-        
-        formats = []
-        medias = data.get("medias", [])
-        
-        if not medias:
-            raise Exception("API tidak menemukan link download untuk video ini. Link mungkin di-private.")
-
-        # Memisahkan hasil berdasarkan Video atau Audio
-        for item in medias:
-            link_url = item.get("url")
-            if link_url:
-                kualitas = item.get("quality", "HD")
-                ext = item.get("extension", "mp4")
-                tipe = item.get("type", "video")
-                
-                label = "Audio Only" if tipe == "audio" else f"Video ({kualitas})"
-                formats.append({"label": label, "ext": ext, "url": link_url})
-
         return {
-            "title": title,
-            "thumbnail": thumbnail,
-            "formats": formats
+            "title": data.get("captionText", "Download Instagram"),
+            "thumbnail": data.get("displayUrl", ""),
+            "formats": [{"label": "Video/Foto", "ext": "mp4", "url": video_url}]
         }
-        
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Mount folder frontend
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/{full_path:path}", response_class=HTMLResponse)
